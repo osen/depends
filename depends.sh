@@ -1,6 +1,5 @@
 FILES=`find . -name '*.c' -o -name '*.h'`
 RETURN=
-PROCESS_RETURN=
 
 function filename()
 {
@@ -9,11 +8,11 @@ function filename()
 
 function process()
 {
-  #echo "Processing: $1"
+  #echo "Processing: $2"
 
-  local CURR=
+  CURR=
 
-  local INCLUDES=`grep -R "^\#include" "$1" | sed 's/include//g' | sed 's/[#"<>]//g'`
+  INCLUDES=`grep -R "^\#include" "$2" | sed 's/include//g' | sed 's/[#"<>]//g'`
 
   #if [ -z "$INCLUDES" ]; then
   #  return
@@ -21,26 +20,24 @@ function process()
 
   for INCLUDE in $INCLUDES; do
     filename "$INCLUDE"
-    local INCLUDE_FILENAME="$RETURN"
+    INCLUDE_FILENAME="$RETURN"
     #echo "Processing include: $INCLUDE_FILENAME ($INCLUDE)"
 
-    for FILE in $FILES; do
+    for FILE in $1; do
       filename "$FILE"
-      local FILE_FILENAME="$RETURN"
+      FILE_FILENAME="$RETURN"
       #echo "FILE FILENAME: $FILE_FILENAME"
 
       if [ "$FILE_FILENAME" = "$INCLUDE_FILENAME" ]; then
         #echo "Matched: $FILE_FILENAME ($FILE)"
 
-        PROCESS_RETURN="$PROCESS_RETURN $FILE"
-        CURR="$CURR $FILE"
-
-        process "$FILE"
+        PROCESS_RETURN=`process "$1" "$FILE"`
+        CURR="$CURR $FILE $PROCESS_RETURN"
       fi
     done
   done
 
-  #echo $CURR
+  echo $CURR
 }
 
 function findobj()
@@ -96,7 +93,7 @@ function mainfunc()
     exit 1
   fi
 
-  process "$2"
+  PROCESS_RETURN=`process "$FILES" "$2"`
 
   findobj "$2"
   OBJ=$RETURN
