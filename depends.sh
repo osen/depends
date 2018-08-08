@@ -1,5 +1,83 @@
 FILES=`find . -name '*.c' -o -name '*.h'`
 RETURN=
+KNOWNLIST=
+OPENLIST=
+
+function listadd()
+{
+  LIST=
+
+  if [ "$1" = "OPENLIST" ]; then
+    LIST="$OPENLIST"
+  else
+    LIST="$KNOWNLIST"
+  fi
+
+  for ITEM in $LIST; do
+    if [ "$ITEM" = "$2" ]; then
+      echo "Error: List already contains item"
+      exit 1
+    fi
+  done
+
+  LIST="$LIST $2"
+
+  if [ "$1" = "OPENLIST" ]; then
+    OPENLIST="$LIST"
+  else
+    KNOWNLIST="$LIST"
+  fi
+}
+
+function listpop()
+{
+  LIST=
+
+  if [ "$1" = "OPENLIST" ]; then
+    LIST="$OPENLIST"
+  else
+    LIST="$KNOWNLIST"
+  fi
+
+  FIRST=1
+  RETURN=
+  RETURN_LIST=
+
+  for ITEM in $LIST; do
+    if [ $FIRST = 1 ]; then
+      RETURN="$ITEM"
+      FIRST=0
+    else
+      RETURN_LIST="$RETURN_LIST $2"
+    fi
+  done
+
+  if [ "$1" = "OPENLIST" ]; then
+    OPENLIST="$RETURN_LIST"
+  else
+    KNOWNLIST="$RETURN_LIST"
+  fi
+}
+
+function listcontains()
+{
+  LIST=
+
+  if [ "$1" = "OPENLIST" ]; then
+    LIST="$OPENLIST"
+  else
+    LIST="$KNOWNLIST"
+  fi
+
+  for ITEM in $LIST; do
+    if [ "$ITEM" = "$2" ]; then
+      RETURN=1
+      return
+    fi
+  done
+
+  RETURN=0
+}
 
 function filename()
 {
@@ -8,36 +86,46 @@ function filename()
 
 function process()
 {
-  #echo "Processing: $2"
+  while true; do
 
-  CURR=
+    listpop "OPENLIST"
+    ITEM="$RETURN"
 
-  INCLUDES=`grep -R "^\#include" "$2" | sed 's/include//g' | sed 's/[#"<>]//g'`
+    if [ -z "$ITEM" ]; then
+      break
+    fi
 
-  #if [ -z "$INCLUDES" ]; then
-  #  return
-  #fi
+    #echo "Processing: $ITEM"
 
-  for INCLUDE in $INCLUDES; do
-    filename "$INCLUDE"
-    INCLUDE_FILENAME="$RETURN"
-    #echo "Processing include: $INCLUDE_FILENAME ($INCLUDE)"
+    INCLUDES=`grep -R "\#include" "$ITEM" | sed 's/include//g' | sed 's/[#"<>]//g'`
 
-    for FILE in $1; do
-      filename "$FILE"
-      FILE_FILENAME="$RETURN"
-      #echo "FILE FILENAME: $FILE_FILENAME"
+    if [ -z "$INCLUDES" ]; then
+      continue
+    fi
 
-      if [ "$FILE_FILENAME" = "$INCLUDE_FILENAME" ]; then
-        #echo "Matched: $FILE_FILENAME ($FILE)"
+    for INCLUDE in $INCLUDES; do
+      filename "$INCLUDE"
+      INCLUDE_FILENAME="$RETURN"
+      #echo "Processing include: $INCLUDE_FILENAME ($INCLUDE)"
 
-        PROCESS_RETURN=`process "$1" "$FILE"`
-        CURR="$CURR $FILE $PROCESS_RETURN"
-      fi
+      for FILE in $FILES; do
+        filename "$FILE"
+        FILE_FILENAME="$RETURN"
+
+        if [ "$FILE_FILENAME" = "$INCLUDE_FILENAME" ]; then
+          #echo "Matched: $FILE_FILENAME ($FILE)"
+
+          listcontains "KNOWNLIST" "$FILE"
+
+          if [ $RETURN = 0 ]; then
+            listadd "OPENLIST" "$FILE"
+            listadd "KNOWNLIST" "$FILE"
+            PROCESS_RETURN="$PROCESS_RETURN $FILE"
+          fi
+        fi
+      done
     done
   done
-
-  echo $CURR
 }
 
 function findobj()
@@ -93,14 +181,16 @@ function mainfunc()
     exit 1
   fi
 
-  PROCESS_RETURN=`process "$FILES" "$2"`
+  listadd "KNOWNLIST" "$2"
+  listadd "OPENLIST" "$2"
+
+  process
 
   findobj "$2"
   OBJ=$RETURN
   RULE="$OBJ:$PROCESS_RETURN"
 
   substituterule "$1" "$OBJ" "$RULE"
-
 }
 
 mainfunc "$1" "$2"
