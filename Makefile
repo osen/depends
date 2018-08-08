@@ -12,8 +12,15 @@ SANDBOX_SRC= \
 
 SANDBOX_OBJ=$(SANDBOX_SRC:.c=.o)
 
+DEPOT_BIN=$(BIN_DIR)/depot
+
+DEPOT_SRC= \
+  src/depot/main.c
+
+DEPOT_OBJ=$(DEPOT_SRC:.c=.o)
+
 .PHONY: all
-all: $(BIN_DIR) $(SANDBOX_BIN)
+all: $(BIN_DIR) $(SANDBOX_BIN) $(DEPOT_BIN)
 
 -include depends.Mk
 
@@ -23,6 +30,13 @@ $(BIN_DIR):
 $(SANDBOX_BIN): $(SANDBOX_OBJ)
 	$(CC) -o $@ $(LFLAGS) $<
 
+$(DEPOT_BIN): $(DEPOT_OBJ)
+	$(CC) -o $@ $(LFLAGS) $<
+
+src/sandbox/%.o: src/sandbox/%.c
+	$(CC) -c -o $@ $(CFLAGS) $<
+	@sh ./depends.sh depends.Mk $<
+
 src/%.o: src/%.c
 	$(CC) -c -o $@ $(CFLAGS) $<
 	@sh ./depends.sh depends.Mk $<
@@ -30,6 +44,8 @@ src/%.o: src/%.c
 .PHONY: clean
 clean:
 	rm -f $(SANDBOX_OBJ)
+	rm -f $(DEPOT_OBJ)
 	rm -f $(SANDBOX_BIN)
+	rm -f $(DEPOT_BIN)
 	rm -f depends.Mk
 	rm -rf $(BIN_DIR)
