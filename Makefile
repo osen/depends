@@ -4,48 +4,38 @@ LFLAGS=-g
 
 BIN_DIR=bin
 
-SANDBOX_BIN=$(BIN_DIR)/sandbox
+.PHONY: bootstrap
+bootstrap:
+	@$(MAKE) all
 
-SANDBOX_SRC= \
-  src/sandbox/main.c \
-  src/sandbox/Test.c
-
-SANDBOX_OBJ=$(SANDBOX_SRC:.c=.o)
-
-DEPOT_BIN=$(BIN_DIR)/depot
-
-DEPOT_SRC= \
-  src/depot/main.c
-
-DEPOT_OBJ=$(DEPOT_SRC:.c=.o)
+include mk/sandbox.Mk
+include mk/depot.Mk
+-include depends.Mk
 
 .PHONY: all
 all: $(BIN_DIR) $(SANDBOX_BIN) $(DEPOT_BIN)
 
--include depends.Mk
+.PHONY: help
+help:
+	@echo ""
+	@echo "all     - Build entire project"
+	@echo "clean   - Clean up project"
+	@echo "clean_o - Clean up just the generated objects"
+	@echo "help    - This help menu"
+	@echo ""
 
 $(BIN_DIR):
 	mkdir bin
 
-$(SANDBOX_BIN): $(SANDBOX_OBJ)
-	$(CC) -o $@ $(LFLAGS) $<
-
-$(DEPOT_BIN): $(DEPOT_OBJ)
-	$(CC) -o $@ $(LFLAGS) $<
-
-src/sandbox/%.o: src/sandbox/%.c
-	$(CC) -c -o $@ $(CFLAGS) $<
-	@sh ./depends.sh depends.Mk $<
-
-src/%.o: src/%.c
-	$(CC) -c -o $@ $(CFLAGS) $<
-	@sh ./depends.sh depends.Mk $<
-
 .PHONY: clean
 clean:
-	rm -f $(SANDBOX_OBJ)
-	rm -f $(DEPOT_OBJ)
+	@$(MAKE) clean_o
 	rm -f $(SANDBOX_BIN)
 	rm -f $(DEPOT_BIN)
-	rm -f depends.Mk
 	rm -rf $(BIN_DIR)
+
+.PHONY: clean_o
+clean_o:
+	rm -f $(SANDBOX_OBJ)
+	rm -f $(DEPOT_OBJ)
+	rm -f depends.Mk
