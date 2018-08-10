@@ -4,8 +4,8 @@ DEPOT_OBJ= \
 DEPOT_BIN=$(BIN_DIR)/depot
 
 $(DEPOT_BIN): $(DEPOT_OBJ)
-	$(CC) -o $@ $(LFLAGS) $<
+	$(CXX) -o $@ $(LFLAGS) $<
 
-src/%.o: src/%.c
-	$(CC) -c -o $@ $(CFLAGS) $<
+src/%.o: src/%.cpp
+	$(CXX) -c -o $@ $(CFLAGS) $(CXXFLAGS) $<
 	@sh ./depends.sh depends.Mk $<

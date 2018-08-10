@@ -1,5 +1,7 @@
 CC=cc
+CXX=c++
 CFLAGS=-Isrc
+CXXFLAGS=
 LFLAGS=-g
 
 BIN_DIR=bin
@@ -25,7 +27,7 @@ help:
 	@echo ""
 
 $(BIN_DIR):
-	mkdir bin
+	mkdir $@
 
 .PHONY: clean
 clean:

@@ -3,6 +3,17 @@ RETURN=
 KNOWNLIST=
 OPENLIST=
 
+##############################################################################
+# listadd
+#
+# Params:
+#   - The list to add to
+#   - The item to add to the list
+#
+# Add the specified item to the specified list. Works in a similar way to the
+# C++ std::vector<T>::add.
+#
+##############################################################################
 function listadd()
 {
   LIST=
@@ -29,6 +40,19 @@ function listadd()
   fi
 }
 
+##############################################################################
+# listpop
+#
+# Params:
+#   - The list to pop from
+#
+# Returns:
+#   The first item from the list that has been removed
+#
+# Remove the first element from the specified list and return it. It works
+# like a queue (FIFO).
+#
+##############################################################################
 function listpop()
 {
   LIST=
@@ -59,6 +83,20 @@ function listpop()
   fi
 }
 
+##############################################################################
+# listcontains
+#
+# Params:
+#   - The list to search in
+#   - The item to search for
+#
+# Returns:
+#   Either 1 or 0 depending on if the specified item was found
+#
+# Search within the specified list for the specified item and return the
+# result.
+#
+##############################################################################
 function listcontains()
 {
   LIST=
@@ -79,13 +117,39 @@ function listcontains()
   RETURN=0
 }
 
+##############################################################################
+# filename
+#
+# Params:
+#   - The full path to a file
+#
+# Returns:
+#   The filename of the specified file
+#
+# Obtain a specified file's filename. It works by cropping the last part after
+# the last '/'. Uses the "basename" function underneath.
+#
+##############################################################################
 function filename()
 {
   RETURN=`basename "$1"`
 }
 
+##############################################################################
+# process
+#
+# Returns:
+#   A list of files that was referenced by the file in the open list.
+#
+# While there are files in the open list, read them and if they have not
+# already been processed, add them to the open list for future processing.
+# Add each file that has needed processing to the return result.
+#
+##############################################################################
 function process()
 {
+  RTN=
+
   while true; do
 
     listpop "OPENLIST"
@@ -120,14 +184,28 @@ function process()
           if [ $RETURN = 0 ]; then
             listadd "OPENLIST" "$FILE"
             listadd "KNOWNLIST" "$FILE"
-            PROCESS_RETURN="$PROCESS_RETURN $FILE"
+            RTN="$RTN $FILE"
           fi
         fi
       done
     done
   done
+
+  RETURN="$RTN"
 }
 
+##############################################################################
+# findobj
+#
+# Params:
+#   - The path of the source unit
+#
+# Returns:
+#   The path of the corresponding object
+#
+# Based on the specified path, return the path of the corresponding object.
+#
+##############################################################################
 function findobj()
 {
   OBJ1=`echo "$1" | sed 's/\..*$//'`.obj
@@ -140,6 +218,18 @@ function findobj()
   fi
 }
 
+##############################################################################
+# substituterule
+#
+# Params:
+#   - The path of the dependency Makefile
+#   - The name of the object the rule is for
+#   - The rule string
+#
+# Add the specified rule to the dependency Makefile. If a rule already
+# exists for the specified object, then replace it.
+#
+##############################################################################
 function substituterule()
 {
   if [ ! -f "$1" ]; then
@@ -169,6 +259,17 @@ function substituterule()
   mv "$OUT" "$1"
 }
 
+##############################################################################
+# mainfunc
+#
+# Params:
+#   - The path of the dependency Makefile
+#   - The path of the source unit to scan
+#
+# Scan the specified unit for all dependent includes recursively and add to
+# the dependencies Makefile (or update it if rule already exists).
+#
+##############################################################################
 function mainfunc()
 {
   if [ -z "$1" ]; then
@@ -185,10 +286,11 @@ function mainfunc()
   listadd "OPENLIST" "$2"
 
   process
+  RULE="$RETURN"
 
   findobj "$2"
   OBJ=$RETURN
-  RULE="$OBJ:$PROCESS_RETURN"
+  RULE="$OBJ:$RULE"
 
   substituterule "$1" "$OBJ" "$RULE"
 }
