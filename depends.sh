@@ -132,7 +132,7 @@ function listcontains()
 ##############################################################################
 function filename()
 {
-  RETURN=`basename "$1"`
+  RETURN=`basename "$1" 2>/dev/null`
 }
 
 ##############################################################################
@@ -161,7 +161,7 @@ function process()
 
     #echo "Processing: $ITEM"
 
-    INCLUDES=`grep -R "\#include" "$ITEM" | sed 's/include//g' | sed 's/[#"<>]//g'`
+    INCLUDES=`grep -R "\#include" "$ITEM" | sed 's/include//g' | sed 's/[ #"<>]//g'`
 
     if [ -z "$INCLUDES" ]; then
       continue
